@@ -122,15 +122,15 @@ const BetPanel = ({ slot = 1 }) => {
               <ShieldCheck size={11} className="text-green-500" />
               Auto Cashout
             </h3>
-            <div className="relative inline-flex items-center cursor-pointer">
+            <label className="inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 className="sr-only peer"
                 checked={!!autoCashout}
                 onChange={(e) => setAutoCashout(e.target.checked ? 2.0 : null)}
               />
-              <div className="w-8 h-4 bg-gray-800 rounded-full peer peer-checked:bg-green-600 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
-            </div>
+              <div className="relative w-8 h-4 bg-gray-800 rounded-full transition-colors peer-checked:bg-green-600 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+            </label>
           </div>
           {autoCashout !== null && (
             <div className="flex items-center gap-2 mt-1.5 bg-[#121212] rounded px-2.5 py-1.5 border border-gray-800">
