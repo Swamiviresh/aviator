@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import api from '../api';
 import { useAuth } from './AuthContext';
@@ -22,13 +22,15 @@ export const GameProvider = ({ children }) => {
   const [autoCashout1, setAutoCashout1] = useState(null);
   const [autoCashout2, setAutoCashout2] = useState(null);
 
+  // Refs to prevent double-firing auto cashout
+  const isCashingOut1 = useRef(false);
+  const isCashingOut2 = useRef(false);
+
   useEffect(() => {
     const socket = io(SOCKET_URL);
-
     socket.on('gameUpdate', (data) => {
       setGameState(data);
     });
-
     return () => socket.disconnect();
   }, []);
 
@@ -43,7 +45,7 @@ export const GameProvider = ({ children }) => {
     }
   };
 
-  const cashout = async (slotId) => {
+  const cashout = useCallback(async (slotId) => {
     try {
       const response = await api.post('/api/cashout', { slotId });
       if (slotId === 1) setActiveBet1(null);
@@ -53,39 +55,49 @@ export const GameProvider = ({ children }) => {
     } catch (error) {
       throw error.response?.data?.error || 'Failed to cash out';
     }
-  };
+  }, [fetchUser]);
 
-  // Auto cashout logic
+  // Auto cashout slot 1
   useEffect(() => {
     if (
       gameState.status === 'RUNNING' &&
       activeBet1 &&
       activeBet1.status === 'pending' &&
       autoCashout1 &&
-      parseFloat(gameState.multiplier) >= parseFloat(autoCashout1)
+      parseFloat(gameState.multiplier) >= parseFloat(autoCashout1) &&
+      !isCashingOut1.current  // prevent double fire
     ) {
-      cashout(1).catch(console.error);
+      isCashingOut1.current = true;
+      cashout(1)
+        .catch(console.error)
+        .finally(() => { isCashingOut1.current = false; });
     }
-  }, [gameState.multiplier, gameState.status, activeBet1, autoCashout1]);
+  }, [gameState.multiplier, gameState.status, activeBet1, autoCashout1, cashout]);
 
+  // Auto cashout slot 2
   useEffect(() => {
     if (
       gameState.status === 'RUNNING' &&
       activeBet2 &&
       activeBet2.status === 'pending' &&
       autoCashout2 &&
-      parseFloat(gameState.multiplier) >= parseFloat(autoCashout2)
+      parseFloat(gameState.multiplier) >= parseFloat(autoCashout2) &&
+      !isCashingOut2.current
     ) {
-      cashout(2).catch(console.error);
+      isCashingOut2.current = true;
+      cashout(2)
+        .catch(console.error)
+        .finally(() => { isCashingOut2.current = false; });
     }
-  }, [gameState.multiplier, gameState.status, activeBet2, autoCashout2]);
+  }, [gameState.multiplier, gameState.status, activeBet2, autoCashout2, cashout]);
 
+  // Reset active bets and cashout guards when round ends
   useEffect(() => {
-    // Only clear active bets when the game crashes or is stopped.
-    // Do NOT clear on WAITING as that is when bets are placed.
     if (gameState.status === 'CRASHED' || gameState.status === 'STOPPED') {
       setActiveBet1(null);
       setActiveBet2(null);
+      isCashingOut1.current = false;
+      isCashingOut2.current = false;
     }
   }, [gameState.status]);
 
