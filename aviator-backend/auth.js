@@ -10,8 +10,8 @@ const ensureAdmin = async () => {
   if (!admin) {
     const hashedPassword = bcrypt.hashSync('admin123', 10);
     await db.execute({
-      sql: 'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-      args: ['admin', hashedPassword, 'admin']
+      sql: 'INSERT INTO users (username, password, balance, role) VALUES (?, ?, ?, ?)',
+      args: ['admin', hashedPassword, 0, 'admin']
     });
     console.log('Default admin user created: admin / admin123');
   }
@@ -25,10 +25,10 @@ const register = async (username, password) => {
     const role = userCount === 0 ? 'admin' : 'user';
 
     const result = await db.execute({
-      sql: 'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-      args: [username, hashedPassword, role]
+      sql: 'INSERT INTO users (username, password, balance, role) VALUES (?, ?, ?, ?)',
+      args: [username, hashedPassword, 0, role]
     });
-    return { id: Number(result.lastInsertRowid), username, balance: 1000.0, role };
+    return { id: Number(result.lastInsertRowid), username, balance: 0, role };
   } catch (error) {
     if (error.message?.includes('UNIQUE constraint failed')) {
       throw new Error('Username already exists');
