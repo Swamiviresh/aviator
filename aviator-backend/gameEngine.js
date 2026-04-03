@@ -5,12 +5,13 @@ class GameEngine {
   constructor(io) {
     this.io = io;
     this.multiplier = 1.0;
-    this.status = 'WAITING'; // WAITING, RUNNING, CRASHED
+    this.status = 'WAITING'; // WAITING, RUNNING, CRASHED, STOPPED
     this.crashPoint = 1.0;
     this.bets = []; // { userId, username, amount, multiplier, status }
     this.history = [];
     this.waitTime = 5; // seconds
     this.timer = 0;
+    this.adminStopped = false;
     this.start();
   }
 
@@ -18,7 +19,23 @@ class GameEngine {
     this.prepareNewRound();
   }
 
+  setAdminControl(stopped) {
+    this.adminStopped = stopped;
+    if (stopped && this.status === 'WAITING') {
+      this.status = 'STOPPED';
+      this.broadcastState();
+    } else if (!stopped && this.status === 'STOPPED') {
+      this.prepareNewRound();
+    }
+  }
+
   prepareNewRound() {
+    if (this.adminStopped) {
+      this.status = 'STOPPED';
+      this.broadcastState();
+      return;
+    }
+
     this.status = 'WAITING';
     this.multiplier = 1.0;
     this.crashPoint = this.generateCrashPoint();
@@ -30,7 +47,12 @@ class GameEngine {
       this.broadcastState();
       if (this.timer <= 0) {
         clearInterval(interval);
-        this.runRound();
+        if (this.adminStopped) {
+          this.status = 'STOPPED';
+          this.broadcastState();
+        } else {
+          this.runRound();
+        }
       }
     }, 100);
   }
@@ -75,7 +97,7 @@ class GameEngine {
   }
 
   placeBet(userId, username, amount) {
-    if (this.status !== 'WAITING') throw new Error('Round already started');
+    if (this.status !== 'WAITING') throw new Error('Round already started or game stopped');
     const user = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
     if (user.balance < amount) throw new Error('Insufficient balance');
 
@@ -109,7 +131,8 @@ class GameEngine {
       multiplier: this.multiplier.toFixed(2),
       timer: this.timer.toFixed(1),
       bets: this.bets,
-      history: this.history
+      history: this.history,
+      adminStopped: this.adminStopped
     });
   }
 
@@ -119,7 +142,8 @@ class GameEngine {
       multiplier: this.multiplier.toFixed(2),
       timer: this.timer.toFixed(1),
       bets: this.bets,
-      history: this.history
+      history: this.history,
+      adminStopped: this.adminStopped
     };
   }
 }

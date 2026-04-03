@@ -5,7 +5,15 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 
-const { register, login, getUserById, SECRET_KEY } = require('./auth');
+const {
+  register,
+  login,
+  getUserById,
+  getAllUsers,
+  adminUpdateBalance,
+  changePassword,
+  SECRET_KEY
+} = require('./auth');
 const GameEngine = require('./gameEngine');
 
 const app = express();
@@ -35,6 +43,14 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ error: 'Admin access required' });
+  }
+};
+
 app.post('/api/auth/register', (req, res) => {
   try {
     const user = register(req.body.username, req.body.password);
@@ -48,6 +64,15 @@ app.post('/api/auth/login', (req, res) => {
   try {
     const result = login(req.body.username, req.body.password);
     res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/auth/change-password', authenticateToken, (req, res) => {
+  try {
+    changePassword(req.user.id, req.body.newPassword);
+    res.json({ message: 'Password updated successfully' });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -75,6 +100,46 @@ app.post('/api/cashout', authenticateToken, (req, res) => {
   try {
     const result = gameEngine.cashout(req.user.id);
     res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Admin Routes
+app.get('/api/admin/users', authenticateToken, isAdmin, (req, res) => {
+  try {
+    const users = getAllUsers();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/admin/add-balance', authenticateToken, isAdmin, (req, res) => {
+  try {
+    const { userId, amount } = req.body;
+    const result = adminUpdateBalance(userId, parseFloat(amount), 'credit', 'Admin added balance');
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/admin/deduct-balance', authenticateToken, isAdmin, (req, res) => {
+  try {
+    const { userId, amount } = req.body;
+    const result = adminUpdateBalance(userId, -parseFloat(amount), 'debit', 'Admin deducted balance');
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/admin/game-control', authenticateToken, isAdmin, (req, res) => {
+  try {
+    const { action } = req.body; // 'start', 'stop'
+    gameEngine.setAdminControl(action === 'stop');
+    res.json({ message: `Game ${action === 'stop' ? 'stopped' : 'started'} by admin` });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
