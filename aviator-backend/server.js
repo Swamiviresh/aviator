@@ -89,7 +89,8 @@ app.get('/api/user/me', authenticateToken, (req, res) => {
 
 app.post('/api/bet', authenticateToken, (req, res) => {
   try {
-    const bet = gameEngine.placeBet(req.user.id, req.user.username, req.body.amount);
+    const { amount, slotId } = req.body;
+    const bet = gameEngine.placeBet(req.user.id, req.user.username, amount, slotId);
     res.json(bet);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -98,7 +99,8 @@ app.post('/api/bet', authenticateToken, (req, res) => {
 
 app.post('/api/cashout', authenticateToken, (req, res) => {
   try {
-    const result = gameEngine.cashout(req.user.id);
+    const { slotId } = req.body;
+    const result = gameEngine.cashout(req.user.id, slotId);
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: error.message });

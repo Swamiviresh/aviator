@@ -17,8 +17,10 @@ export const GameProvider = ({ children }) => {
     history: [],
     adminStopped: false
   });
-  const [activeBet, setActiveBet] = useState(null);
-  const [autoCashout, setAutoCashout] = useState(null);
+  const [activeBet1, setActiveBet1] = useState(null);
+  const [activeBet2, setActiveBet2] = useState(null);
+  const [autoCashout1, setAutoCashout1] = useState(null);
+  const [autoCashout2, setAutoCashout2] = useState(null);
 
   useEffect(() => {
     const socket = io(SOCKET_URL);
@@ -30,20 +32,22 @@ export const GameProvider = ({ children }) => {
     return () => socket.disconnect();
   }, []);
 
-  const placeBet = async (amount) => {
+  const placeBet = async (amount, slotId) => {
     try {
-      const response = await api.post('/api/bet', { amount: parseFloat(amount) });
-      setActiveBet(response.data);
+      const response = await api.post('/api/bet', { amount: parseFloat(amount), slotId });
+      if (slotId === 1) setActiveBet1(response.data);
+      else setActiveBet2(response.data);
       fetchUser();
     } catch (error) {
       throw error.response?.data?.error || 'Failed to place bet';
     }
   };
 
-  const cashout = async () => {
+  const cashout = async (slotId) => {
     try {
-      const response = await api.post('/api/cashout');
-      setActiveBet(null);
+      const response = await api.post('/api/cashout', { slotId });
+      if (slotId === 1) setActiveBet1(null);
+      else setActiveBet2(null);
       fetchUser();
       return response.data;
     } catch (error) {
@@ -55,34 +59,42 @@ export const GameProvider = ({ children }) => {
   useEffect(() => {
     if (
       gameState.status === 'RUNNING' &&
-      activeBet &&
-      activeBet.status === 'pending' &&
-      autoCashout &&
-      parseFloat(gameState.multiplier) >= parseFloat(autoCashout)
+      activeBet1 &&
+      activeBet1.status === 'pending' &&
+      autoCashout1 &&
+      parseFloat(gameState.multiplier) >= parseFloat(autoCashout1)
     ) {
-      // Use a small timeout or another mechanism to avoid sync setState in effect if needed,
-      // but usually async API calls are fine. The lint error might be over-zealous here.
-      // Wrapping in a check to ensure we only call it once.
-      cashout().catch(console.error);
+      cashout(1).catch(console.error);
     }
-  }, [gameState.multiplier, gameState.status, activeBet, autoCashout]);
+  }, [gameState.multiplier, gameState.status, activeBet1, autoCashout1]);
+
+  useEffect(() => {
+    if (
+      gameState.status === 'RUNNING' &&
+      activeBet2 &&
+      activeBet2.status === 'pending' &&
+      autoCashout2 &&
+      parseFloat(gameState.multiplier) >= parseFloat(autoCashout2)
+    ) {
+      cashout(2).catch(console.error);
+    }
+  }, [gameState.multiplier, gameState.status, activeBet2, autoCashout2]);
 
   useEffect(() => {
     if (gameState.status === 'CRASHED' || gameState.status === 'WAITING' || gameState.status === 'STOPPED') {
-      if (activeBet) {
-        setActiveBet(null);
-      }
+      if (activeBet1) setActiveBet1(null);
+      if (activeBet2) setActiveBet2(null);
     }
-  }, [gameState.status, activeBet]);
+  }, [gameState.status, activeBet1, activeBet2]);
 
   return (
     <GameContext.Provider value={{
       gameState,
-      activeBet,
+      activeBet1, activeBet2,
       placeBet,
       cashout,
-      autoCashout,
-      setAutoCashout
+      autoCashout1, setAutoCashout1,
+      autoCashout2, setAutoCashout2
     }}>
       {children}
     </GameContext.Provider>

@@ -69,9 +69,9 @@ const Game = () => {
 
               {/* Responsive Bet Panel Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <BetPanel />
+                 <BetPanel slot={1} />
                  <div className="hidden md:block">
-                    <BetPanel /> {/* Show two panels on desktop like pro apps */}
+                    <BetPanel slot={2} /> {/* Show two panels on desktop like pro apps */}
                  </div>
               </div>
             </div>

@@ -3,12 +3,23 @@ import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Minus, Zap, ShieldCheck } from 'lucide-react';
 
-const BetPanel = () => {
-  const { gameState, activeBet, placeBet, cashout, autoCashout, setAutoCashout } = useGame();
+const BetPanel = ({ slot = 1 }) => {
+  const {
+    gameState,
+    activeBet1, activeBet2,
+    placeBet,
+    cashout,
+    autoCashout1, setAutoCashout1,
+    autoCashout2, setAutoCashout2
+  } = useGame();
   const { user } = useAuth();
   const [amount, setAmount] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const activeBet = slot === 1 ? activeBet1 : activeBet2;
+  const autoCashout = slot === 1 ? autoCashout1 : autoCashout2;
+  const setAutoCashout = slot === 1 ? setAutoCashout1 : setAutoCashout2;
 
   const canPlaceBet = gameState.status === 'WAITING' && !activeBet;
   const isPending = activeBet && activeBet.status === 'pending';
@@ -18,7 +29,7 @@ const BetPanel = () => {
     setLoading(true);
     setError(null);
     try {
-      await placeBet(amount);
+      await placeBet(amount, slot);
     } catch (err) {
       setError(err);
     } finally {
@@ -30,7 +41,7 @@ const BetPanel = () => {
     setLoading(true);
     setError(null);
     try {
-      await cashout();
+      await cashout(slot);
     } catch (err) {
       setError(err);
     } finally {

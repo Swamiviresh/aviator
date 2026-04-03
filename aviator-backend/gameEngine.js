@@ -96,22 +96,27 @@ class GameEngine {
     return 0.99 / (1 - random);
   }
 
-  placeBet(userId, username, amount) {
+  placeBet(userId, username, amount, slotId = 1) {
     if (this.status !== 'WAITING') throw new Error('Round already started or game stopped');
     const user = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
     if (user.balance < amount) throw new Error('Insufficient balance');
 
+    // Check if slot already has a bet
+    if (this.bets.some(b => b.userId === userId && b.slotId === slotId)) {
+        throw new Error('Already placed a bet in this slot');
+    }
+
     updateUserBalance(userId, -amount);
-    const bet = { userId, username, amount, multiplier: 0, status: 'pending' };
+    const bet = { userId, username, amount, multiplier: 0, status: 'pending', slotId };
     this.bets.push(bet);
     this.broadcastState();
     return bet;
   }
 
-  cashout(userId) {
+  cashout(userId, slotId = 1) {
     if (this.status !== 'RUNNING') throw new Error('Game not running');
-    const bet = this.bets.find(b => b.userId === userId && b.status === 'pending');
-    if (!bet) throw new Error('No active bet');
+    const bet = this.bets.find(b => b.userId === userId && b.slotId === slotId && b.status === 'pending');
+    if (!bet) throw new Error('No active bet in this slot');
 
     const payout = bet.amount * this.multiplier;
     bet.multiplier = this.multiplier;
