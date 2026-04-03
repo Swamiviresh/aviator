@@ -148,44 +148,52 @@ const BetPanel = ({ slot = 1 }) => {
 
       {error && <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider text-center">{error}</p>}
 
-      {canCashout ? (
-        <button
-          onClick={handleCashout}
-          disabled={loading}
-          className="w-full h-24 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-[0_10px_40px_rgba(234,88,12,0.4)] transition-all transform active:scale-95 disabled:opacity-50 border-2 border-orange-400/30 animate-pulse"
-        >
-          <div className="flex items-center gap-2 mb-1">
-             <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">Cashout</span>
-             <span className="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-black">{gameState.multiplier}x</span>
-          </div>
-          <span className="text-4xl font-black tabular-nums">
-            ${(amount * gameState.multiplier).toFixed(2)}
-          </span>
-        </button>
-      ) : (
-        <button
-          onClick={handlePlaceBet}
-          disabled={!canPlaceBet || loading}
-          className={`w-full h-20 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-            canPlaceBet 
-            ? 'bg-red-600 hover:bg-red-700 text-white shadow-[0_10px_30px_rgba(220,38,38,0.3)]'
-            : 'bg-gray-800 text-gray-500 border border-gray-700'
-          }`}
-        >
-          {loading ? (
-            <span className="animate-pulse text-xs font-black uppercase tracking-[0.2em]">Processing...</span>
-          ) : (
-            <>
-              <span className="text-xs font-black uppercase tracking-[0.2em]">
-                {gameState.status === 'WAITING' ? 'Place Bet' : 'Wait Next Round'}
-              </span>
-              <span className="text-2xl font-black">
-                {gameState.status === 'WAITING' ? `$${amount}` : '...'}
-              </span>
-            </>
-          )}
-        </button>
-      )}
+      <div className="flex flex-col gap-3">
+        {isPending && (
+          <button
+            onClick={handleCashout}
+            disabled={!canCashout || loading}
+            className={`w-full h-24 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all transform active:scale-95 disabled:opacity-50 border-2 ${
+              canCashout
+              ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-[0_10px_40px_rgba(234,88,12,0.4)] border-orange-400/30 animate-pulse'
+              : 'bg-gray-800 text-gray-500 border-gray-700'
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+               <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">Manual Cashout</span>
+               {canCashout && <span className="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-black">{gameState.multiplier}x</span>}
+            </div>
+            <span className="text-4xl font-black tabular-nums">
+              {canCashout ? `$${(amount * gameState.multiplier).toFixed(2)}` : 'Wait for Start'}
+            </span>
+          </button>
+        )}
+
+        {!isPending && (
+          <button
+            onClick={handlePlaceBet}
+            disabled={!canPlaceBet || loading}
+            className={`w-full h-20 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+              canPlaceBet
+              ? 'bg-red-600 hover:bg-red-700 text-white shadow-[0_10px_30px_rgba(220,38,38,0.3)]'
+              : 'bg-gray-800 text-gray-500 border border-gray-700'
+            }`}
+          >
+            {loading ? (
+              <span className="animate-pulse text-xs font-black uppercase tracking-[0.2em]">Processing...</span>
+            ) : (
+              <>
+                <span className="text-xs font-black uppercase tracking-[0.2em]">
+                  {gameState.status === 'WAITING' ? 'Place Bet' : 'Wait Next Round'}
+                </span>
+                <span className="text-2xl font-black">
+                  {gameState.status === 'WAITING' ? `$${amount}` : '...'}
+                </span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
 
       <div className="flex items-center justify-center gap-1.5 opacity-50">
         <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>

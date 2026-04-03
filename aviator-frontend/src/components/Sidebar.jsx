@@ -10,13 +10,6 @@ import {
 const Sidebar = () => {
   const categories = [
     { icon: <Gamepad2 size={20} />, label: 'Aviator', active: true },
-    { icon: <TrendingUp size={20} />, label: 'Popular', badge: 'HOT' },
-    { icon: <History size={20} />, label: 'Recent' },
-  ];
-
-  const support = [
-    { icon: <HelpCircle size={18} />, label: 'FAQ' },
-    { icon: <Settings size={18} />, label: 'Settings' },
   ];
 
   return (
@@ -28,7 +21,7 @@ const Sidebar = () => {
             <button
               key={i}
               className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group ${
-                cat.active ? 'bg-[#1a1a1a] text-red-500 shadow-inner border border-gray-800' : 'text-gray-400 hover:bg-[#1a1a1a] hover:text-white cursor-not-allowed opacity-50'
+                cat.active ? 'bg-[#1a1a1a] text-red-500 shadow-inner border border-gray-800' : 'text-gray-400 hover:bg-[#1a1a1a] hover:text-white'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -42,23 +35,6 @@ const Sidebar = () => {
                   {cat.badge}
                 </span>
               )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="px-6 mb-8">
-        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-4">Information</p>
-        <div className="flex flex-col gap-1">
-          {support.map((item, i) => (
-            <button
-              key={i}
-              className="flex items-center gap-3 px-3 py-2 text-gray-400 transition-all rounded-lg group cursor-not-allowed opacity-50"
-            >
-              <span className="text-gray-500 group-hover:text-gray-300 transition-colors">
-                {item.icon}
-              </span>
-              <span className="text-sm font-bold">{item.label}</span>
             </button>
           ))}
         </div>

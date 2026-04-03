@@ -81,11 +81,13 @@ export const GameProvider = ({ children }) => {
   }, [gameState.multiplier, gameState.status, activeBet2, autoCashout2]);
 
   useEffect(() => {
-    if (gameState.status === 'CRASHED' || gameState.status === 'WAITING' || gameState.status === 'STOPPED') {
-      if (activeBet1) setActiveBet1(null);
-      if (activeBet2) setActiveBet2(null);
+    // Only clear active bets when the game crashes or is stopped.
+    // Do NOT clear on WAITING as that is when bets are placed.
+    if (gameState.status === 'CRASHED' || gameState.status === 'STOPPED') {
+      setActiveBet1(null);
+      setActiveBet2(null);
     }
-  }, [gameState.status, activeBet1, activeBet2]);
+  }, [gameState.status]);
 
   return (
     <GameContext.Provider value={{
