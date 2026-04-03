@@ -22,7 +22,17 @@ const register = (username, password) => {
   }
 };
 
+const ensureAdmin = () => {
+  const admin = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
+  if (!admin) {
+    const hashedPassword = bcrypt.hashSync('admin123', 10);
+    db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)').run('admin', hashedPassword, 'admin');
+    console.log('Default admin user created: admin/admin123');
+  }
+};
+
 const login = (username, password) => {
+  ensureAdmin();
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
   if (!user || !bcrypt.compareSync(password, user.password)) {
     throw new Error('Invalid credentials');
@@ -48,8 +58,27 @@ const getAllUsers = () => {
   });
 };
 
-const updateUserBalance = (id, amount) => {
-  db.prepare('UPDATE users SET balance = balance + ? WHERE id = ?').run(amount, id);
+const updateUserBalance = (userId, amount, type = 'game', description = 'Game transaction') => {
+  const user = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
+  if (!user) return;
+
+  const newBalance = user.balance + amount;
+
+  const updateStmt = db.prepare('UPDATE users SET balance = ? WHERE id = ?');
+  const transStmt = db.prepare('INSERT INTO transactions (userId, amount, type, description) VALUES (?, ?, ?, ?)');
+
+  const transaction = db.transaction(() => {
+    updateStmt.run(newBalance, userId);
+    // For type, we can use 'credit' or 'debit' based on amount if not provided,
+    // but the prompt asked for types like credit/debit/bet/cashout
+    let finalType = type;
+    if (type === 'game') {
+      finalType = amount < 0 ? 'bet' : 'cashout';
+    }
+    transStmt.run(userId, Math.abs(amount), finalType, description);
+  });
+
+  transaction();
 };
 
 const adminUpdateBalance = (userId, amount, type, description) => {
@@ -76,6 +105,10 @@ const changePassword = (userId, newPassword) => {
   db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, userId);
 };
 
+const deleteUser = (id) => {
+  db.prepare('DELETE FROM users WHERE id = ?').run(id);
+};
+
 module.exports = {
   register,
   login,
@@ -84,5 +117,7 @@ module.exports = {
   updateUserBalance,
   adminUpdateBalance,
   changePassword,
+  deleteUser,
+  ensureAdmin,
   SECRET_KEY
 };

@@ -5,6 +5,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 
+const db = require('./db');
 const {
   register,
   login,
@@ -12,6 +13,8 @@ const {
   getAllUsers,
   adminUpdateBalance,
   changePassword,
+  deleteUser,
+  ensureAdmin,
   SECRET_KEY
 } = require('./auth');
 const GameEngine = require('./gameEngine');
@@ -59,6 +62,9 @@ app.post('/api/auth/register', (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
+
+// Call ensureAdmin on startup
+ensureAdmin();
 
 app.post('/api/auth/login', (req, res) => {
   try {
@@ -139,11 +145,39 @@ app.post('/api/admin/deduct-balance', authenticateToken, isAdmin, (req, res) => 
 
 app.post('/api/admin/game-control', authenticateToken, isAdmin, (req, res) => {
   try {
-    const { action } = req.body; // 'start', 'stop'
+    const { action } = req.body; // 'start', 'stop', 'crash'
+    if (action === 'crash') {
+      const success = gameEngine.forceCrash();
+      return res.json({ message: success ? 'Game crashed by admin' : 'Game not running', success });
+    }
     gameEngine.setAdminControl(action === 'stop');
     res.json({ message: `Game ${action === 'stop' ? 'stopped' : 'started'} by admin` });
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/admin/users/:id', authenticateToken, isAdmin, (req, res) => {
+  try {
+    deleteUser(req.params.id);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/admin/transactions', authenticateToken, isAdmin, (req, res) => {
+  try {
+    const transactions = db.prepare(`
+      SELECT t.*, u.username
+      FROM transactions t
+      JOIN users u ON t.userId = u.id
+      ORDER BY t.timestamp DESC
+      LIMIT 100
+    `).all();
+    res.json(transactions);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

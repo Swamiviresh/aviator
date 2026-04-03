@@ -24,9 +24,17 @@ class GameEngine {
     if (stopped && this.status === 'WAITING') {
       this.status = 'STOPPED';
       this.broadcastState();
-    } else if (!stopped && this.status === 'STOPPED') {
+    } else if (!stopped && (this.status === 'STOPPED' || this.status === 'CRASHED')) {
       this.prepareNewRound();
     }
+  }
+
+  forceCrash() {
+    if (this.status === 'RUNNING') {
+      this.multiplier = this.crashPoint; // Trigger immediate crash in the loop
+      return true;
+    }
+    return false;
   }
 
   prepareNewRound() {
@@ -106,7 +114,7 @@ class GameEngine {
         throw new Error('Already placed a bet in this slot');
     }
 
-    updateUserBalance(userId, -amount);
+    updateUserBalance(userId, -amount, 'bet', `Placed bet in slot ${slotId}`);
     const bet = { userId, username, amount, multiplier: 0, status: 'pending', slotId };
     this.bets.push(bet);
     this.broadcastState();
@@ -121,7 +129,7 @@ class GameEngine {
     const payout = bet.amount * this.multiplier;
     bet.multiplier = this.multiplier;
     bet.status = 'cashed_out';
-    updateUserBalance(userId, payout);
+    updateUserBalance(userId, payout, 'cashout', `Cashed out at ${this.multiplier.toFixed(2)}x`);
 
     db.prepare('INSERT INTO bets (userId, amount, multiplier, payout, status) VALUES (?, ?, ?, ?, ?)')
       .run(userId, bet.amount, bet.multiplier, payout, 'cashed_out');
