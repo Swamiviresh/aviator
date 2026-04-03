@@ -1,0 +1,127 @@
+const db = require('./db');
+const { updateUserBalance } = require('./auth');
+
+class GameEngine {
+  constructor(io) {
+    this.io = io;
+    this.multiplier = 1.0;
+    this.status = 'WAITING'; // WAITING, RUNNING, CRASHED
+    this.crashPoint = 1.0;
+    this.bets = []; // { userId, username, amount, multiplier, status }
+    this.history = [];
+    this.waitTime = 5; // seconds
+    this.timer = 0;
+    this.start();
+  }
+
+  start() {
+    this.prepareNewRound();
+  }
+
+  prepareNewRound() {
+    this.status = 'WAITING';
+    this.multiplier = 1.0;
+    this.crashPoint = this.generateCrashPoint();
+    this.bets = [];
+    this.timer = this.waitTime;
+
+    const interval = setInterval(() => {
+      this.timer -= 0.1;
+      this.broadcastState();
+      if (this.timer <= 0) {
+        clearInterval(interval);
+        this.runRound();
+      }
+    }, 100);
+  }
+
+  runRound() {
+    this.status = 'RUNNING';
+    const interval = setInterval(() => {
+      this.multiplier += 0.01 * (this.multiplier / 2); // Accelerate slightly
+      this.broadcastState();
+
+      if (this.multiplier >= this.crashPoint) {
+        clearInterval(interval);
+        this.crash();
+      }
+    }, 100);
+  }
+
+  crash() {
+    this.status = 'CRASHED';
+    this.history.unshift(this.multiplier.toFixed(2));
+    if (this.history.length > 20) this.history.pop();
+
+    this.bets.forEach(bet => {
+      if (bet.status === 'pending') {
+        bet.status = 'lost';
+        db.prepare('INSERT INTO bets (userId, amount, multiplier, payout, status) VALUES (?, ?, ?, ?, ?)')
+          .run(bet.userId, bet.amount, this.multiplier, 0, 'lost');
+      }
+    });
+
+    this.broadcastState();
+
+    setTimeout(() => {
+      this.prepareNewRound();
+    }, 3000);
+  }
+
+  generateCrashPoint() {
+    const random = Math.random();
+    if (random < 0.03) return 1.0; // 3% instant crash
+    return 0.99 / (1 - random);
+  }
+
+  placeBet(userId, username, amount) {
+    if (this.status !== 'WAITING') throw new Error('Round already started');
+    const user = db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
+    if (user.balance < amount) throw new Error('Insufficient balance');
+
+    updateUserBalance(userId, -amount);
+    const bet = { userId, username, amount, multiplier: 0, status: 'pending' };
+    this.bets.push(bet);
+    this.broadcastState();
+    return bet;
+  }
+
+  cashout(userId) {
+    if (this.status !== 'RUNNING') throw new Error('Game not running');
+    const bet = this.bets.find(b => b.userId === userId && b.status === 'pending');
+    if (!bet) throw new Error('No active bet');
+
+    const payout = bet.amount * this.multiplier;
+    bet.multiplier = this.multiplier;
+    bet.status = 'cashed_out';
+    updateUserBalance(userId, payout);
+
+    db.prepare('INSERT INTO bets (userId, amount, multiplier, payout, status) VALUES (?, ?, ?, ?, ?)')
+      .run(userId, bet.amount, bet.multiplier, payout, 'cashed_out');
+
+    this.broadcastState();
+    return { multiplier: bet.multiplier, payout };
+  }
+
+  broadcastState() {
+    this.io.emit('gameUpdate', {
+      status: this.status,
+      multiplier: this.multiplier.toFixed(2),
+      timer: this.timer.toFixed(1),
+      bets: this.bets,
+      history: this.history
+    });
+  }
+
+  getState() {
+    return {
+      status: this.status,
+      multiplier: this.multiplier.toFixed(2),
+      timer: this.timer.toFixed(1),
+      bets: this.bets,
+      history: this.history
+    };
+  }
+}
+
+module.exports = GameEngine;
