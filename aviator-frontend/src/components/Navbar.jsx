@@ -20,9 +20,7 @@ const Navbar = () => {
           AVIATOR
         </Link>
         <div className="hidden md:flex gap-4">
-          <Link to="/" className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">Casino</Link>
           <Link to="/" className="text-white border-b-2 border-red-600 px-1 text-sm font-bold uppercase">Aviator</Link>
-          <Link to="/" className="text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase">Live Games</Link>
         </div>
       </div>
 

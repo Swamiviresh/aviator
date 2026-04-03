@@ -43,7 +43,7 @@ const Game = () => {
           <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
             {/* Left/Center: Game Canvas & Control */}
             <div className="flex-[2.5] flex flex-col gap-6 min-h-0">
-              <div className="flex-1 relative min-h-[400px] bg-[#050505] rounded-3xl border border-gray-800/50 overflow-hidden shadow-2xl">
+              <div className="flex-1 relative min-h-[300px] max-h-[400px] bg-[#050505] rounded-3xl border border-gray-800/50 overflow-hidden shadow-2xl">
                 <PlaneCanvas multiplier={gameState.multiplier} status={gameState.status} />
 
                 {gameState.status === 'WAITING' && (
@@ -85,21 +85,7 @@ const Game = () => {
       </div>
 
       {/* Footer / Mobile Nav */}
-      <footer className="xl:ml-64 p-4 border-t border-gray-900 flex justify-between items-center bg-[#050505]">
-         <div className="flex items-center gap-6">
-            <div className="flex flex-col">
-              <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Network Status</span>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                <span className="text-[10px] font-bold text-gray-300">Operational</span>
-              </div>
-            </div>
-            <div className="h-8 w-px bg-gray-800 hidden sm:block"></div>
-            <div className="flex flex-col hidden sm:flex">
-              <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Server Time</span>
-              <span className="text-[10px] font-bold text-gray-300 font-mono">{new Date().toLocaleTimeString()}</span>
-            </div>
-         </div>
+      <footer className="xl:ml-64 p-4 border-t border-gray-900 flex justify-center items-center bg-[#050505]">
          <p className="text-[9px] text-gray-700 font-black uppercase tracking-[0.2em]">© 2024 Aviator Pro • Provably Fair</p>
       </footer>
     </div>

@@ -9,6 +9,15 @@ const PlaneCanvas = ({ multiplier, status }) => {
     const ctx = canvas.getContext('2d');
     let animationFrameId;
 
+    const handleResize = () => {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
     const render = () => {
       const width = canvas.width;
       const height = canvas.height;
@@ -112,16 +121,17 @@ const PlaneCanvas = ({ multiplier, status }) => {
 
     render();
 
-    return () => cancelAnimationFrame(animationFrameId);
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+    };
   }, [multiplier, status]);
 
   return (
     <div className="relative w-full h-full bg-black rounded-xl overflow-hidden shadow-inner group">
       <canvas
         ref={canvasRef}
-        width={800}
-        height={500}
-        className="w-full h-full object-cover"
+        className="w-full h-full block"
       />
 
       {/* Multiplier Display */}

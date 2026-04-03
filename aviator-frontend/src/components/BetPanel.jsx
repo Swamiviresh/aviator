@@ -141,10 +141,13 @@ const BetPanel = () => {
         <button
           onClick={handleCashout}
           disabled={loading}
-          className="w-full h-20 bg-green-500 hover:bg-green-600 text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-[0_10px_30px_rgba(34,197,94,0.3)] transition-all transform active:scale-95 disabled:opacity-50"
+          className="w-full h-24 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl flex flex-col items-center justify-center gap-1 shadow-[0_10px_40px_rgba(234,88,12,0.4)] transition-all transform active:scale-95 disabled:opacity-50 border-2 border-orange-400/30 animate-pulse"
         >
-          <span className="text-xs font-black uppercase tracking-[0.2em] opacity-80">Cashout</span>
-          <span className="text-3xl font-black">
+          <div className="flex items-center gap-2 mb-1">
+             <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">Cashout</span>
+             <span className="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-black">{gameState.multiplier}x</span>
+          </div>
+          <span className="text-4xl font-black tabular-nums">
             ${(amount * gameState.multiplier).toFixed(2)}
           </span>
         </button>

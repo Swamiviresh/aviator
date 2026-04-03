@@ -10,20 +10,23 @@ import {
   Menu,
   ChevronRight,
   TrendingUp,
-  Award
+  Award,
+  CircleDot,
+  Activity,
+  Monitor
 } from 'lucide-react';
 
 const Sidebar = () => {
   const categories = [
-    { icon: <Gamepad2 size={20} />, label: 'All Games', active: true },
+    { icon: <Gamepad2 size={20} />, label: 'Aviator', active: true },
+    { icon: <CircleDot size={20} />, label: 'Cricket' },
+    { icon: <Activity size={20} />, label: 'Football' },
+    { icon: <Monitor size={20} />, label: 'Live Casino' },
     { icon: <TrendingUp size={20} />, label: 'Popular', badge: 'HOT' },
-    { icon: <Trophy size={20} />, label: 'Tournaments' },
-    { icon: <Award size={20} />, label: 'Challenges' },
     { icon: <History size={20} />, label: 'Recent' },
   ];
 
   const support = [
-    { icon: <MessageSquare size={18} />, label: 'Support Chat' },
     { icon: <HelpCircle size={18} />, label: 'FAQ' },
     { icon: <Settings size={18} />, label: 'Settings' },
   ];
@@ -73,15 +76,6 @@ const Sidebar = () => {
         </div>
       </div>
 
-      <div className="mt-auto px-6 pt-6 border-t border-[#2a2a2a] mb-20">
-        <div className="bg-gradient-to-br from-red-600/20 to-black p-4 rounded-xl border border-red-900/30">
-          <p className="text-xs font-bold text-red-500 uppercase tracking-wider mb-2">Live Support</p>
-          <p className="text-[10px] text-gray-400 leading-tight mb-3">Our 24/7 team is here to help with your balance or game issues.</p>
-          <button className="w-full bg-red-600 hover:bg-red-700 text-white text-[11px] font-black py-2 rounded-lg transition-colors uppercase tracking-widest shadow-lg">
-            Chat Now
-          </button>
-        </div>
-      </div>
     </aside>
   );
 };
