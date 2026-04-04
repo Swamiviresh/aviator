@@ -114,6 +114,16 @@ app.post('/api/cashout', authenticateToken, async (req, res) => {
   }
 });
 
+app.post('/api/cancel-bet', authenticateToken, async (req, res) => {
+  try {
+    const { slotId } = req.body;
+    const result = await gameEngine.cancelBet(req.user.id, slotId);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // Admin Routes
 app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
   try {

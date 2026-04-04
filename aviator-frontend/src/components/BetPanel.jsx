@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Minus, Zap, ShieldCheck } from 'lucide-react';
+import { Plus, Minus, Zap, ShieldCheck, X } from 'lucide-react';
 
 const BetPanel = ({ slot = 1 }) => {
   const {
     gameState,
     activeBet1, activeBet2,
-    placeBet,
-    cashout,
+    placeBet, cashout, cancelBet,
     autoCashout1, setAutoCashout1,
     autoCashout2, setAutoCashout2
   } = useGame();
@@ -24,6 +23,7 @@ const BetPanel = ({ slot = 1 }) => {
   const isQueued = activeBet && activeBet.queued;
   const isPending = activeBet && activeBet.status === 'pending' && !activeBet.queued;
   const canCashout = gameState.status === 'RUNNING' && isPending;
+  const canCancel = (gameState.status === 'WAITING' && isPending) || isQueued;
   const canPlaceBet = (gameState.status === 'WAITING' || gameState.status === 'RUNNING') && !activeBet;
 
   const handlePlaceBet = async () => {
@@ -39,14 +39,21 @@ const BetPanel = ({ slot = 1 }) => {
   };
 
   const handleCashout = async () => {
-    setLoading(true);
+    // No loading state — optimistic, feels instant
     setError(null);
     try {
       await cashout(slot);
     } catch (err) {
       setError(err);
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    setError(null);
+    try {
+      await cancelBet(slot);
+    } catch (err) {
+      setError(err);
     }
   };
 
@@ -151,28 +158,46 @@ const BetPanel = ({ slot = 1 }) => {
 
       {error && <p className="text-[9px] text-red-500 font-bold uppercase tracking-wider text-center">{error}</p>}
 
-      {/* Action Button */}
+      {/* Action Buttons */}
       {isPending ? (
-        <button
-          onClick={handleCashout}
-          disabled={!canCashout || loading}
-          className={`w-full h-16 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all transform active:scale-95 disabled:opacity-50 border-2 ${
-            canCashout
-              ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-[0_6px_20px_rgba(234,88,12,0.35)] border-orange-400/30 animate-pulse'
-              : 'bg-gray-800 text-gray-500 border-gray-700'
-          }`}
-        >
-          <span className="text-[9px] font-black uppercase tracking-[0.25em] opacity-80">
-            {canCashout ? `Cashout · ${gameState.multiplier}x` : 'Wait for Start'}
-          </span>
-          <span className="text-2xl font-black tabular-nums">
-            {canCashout ? `$${(amount * gameState.multiplier).toFixed(2)}` : '...'}
-          </span>
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={handleCashout}
+            disabled={!canCashout}
+            className={`w-full h-16 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all transform active:scale-95 disabled:opacity-50 border-2 ${
+              canCashout
+                ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-[0_6px_20px_rgba(234,88,12,0.35)] border-orange-400/30 animate-pulse'
+                : 'bg-gray-800 text-gray-500 border-gray-700'
+            }`}
+          >
+            <span className="text-[9px] font-black uppercase tracking-[0.25em] opacity-80">
+              {canCashout ? `Cashout · ${gameState.multiplier}x` : 'Wait for Start'}
+            </span>
+            <span className="text-2xl font-black tabular-nums">
+              {canCashout ? `$${(activeBet.amount * parseFloat(gameState.multiplier)).toFixed(2)}` : '...'}
+            </span>
+          </button>
+          {canCancel && (
+            <button
+              onClick={handleCancel}
+              className="w-full h-8 rounded-lg flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-800 transition-all text-[9px] font-black uppercase tracking-widest"
+            >
+              <X size={11} /> Cancel Bet
+            </button>
+          )}
+        </div>
       ) : isQueued ? (
-        <div className="w-full h-14 rounded-xl flex flex-col items-center justify-center gap-0.5 bg-yellow-600/10 border border-yellow-700/30">
-          <span className="text-[9px] font-black uppercase tracking-[0.25em] text-yellow-500">Queued for Next Round</span>
-          <span className="text-xl font-black text-yellow-400">${activeBet.amount.toFixed(2)}</span>
+        <div className="flex flex-col gap-2">
+          <div className="w-full h-14 rounded-xl flex flex-col items-center justify-center gap-0.5 bg-yellow-600/10 border border-yellow-700/30">
+            <span className="text-[9px] font-black uppercase tracking-[0.25em] text-yellow-500">Queued for Next Round</span>
+            <span className="text-xl font-black text-yellow-400">${activeBet.amount.toFixed(2)}</span>
+          </div>
+          <button
+            onClick={handleCancel}
+            className="w-full h-8 rounded-lg flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-800 transition-all text-[9px] font-black uppercase tracking-widest"
+          >
+            <X size={11} /> Cancel Queue
+          </button>
         </div>
       ) : (
         <button

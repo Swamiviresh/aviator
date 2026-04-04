@@ -22,6 +22,7 @@ export const GameProvider = ({ children }) => {
   const [autoCashout1, setAutoCashout1] = useState(null);
   const [autoCashout2, setAutoCashout2] = useState(null);
 
+  // Refs to prevent double-firing auto cashout
   const isCashingOut1 = useRef(false);
   const isCashingOut2 = useRef(false);
 
@@ -44,11 +45,25 @@ export const GameProvider = ({ children }) => {
     }
   };
 
-  const cashout = useCallback(async (slotId) => {
+  const cancelBet = useCallback(async (slotId) => {
     try {
-      const response = await api.post('/api/cashout', { slotId });
+      // Optimistic update
       if (slotId === 1) setActiveBet1(null);
       else setActiveBet2(null);
+      const response = await api.post('/api/cancel-bet', { slotId });
+      fetchUser();
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.error || 'Failed to cancel bet';
+    }
+  }, [fetchUser]);
+
+  const cashout = useCallback(async (slotId) => {
+    try {
+      // Optimistic update — clear bet instantly so UI responds immediately
+      if (slotId === 1) setActiveBet1(null);
+      else setActiveBet2(null);
+      const response = await api.post('/api/cashout', { slotId });
       fetchUser();
       return response.data;
     } catch (error) {
@@ -62,10 +77,9 @@ export const GameProvider = ({ children }) => {
       gameState.status === 'RUNNING' &&
       activeBet1 &&
       activeBet1.status === 'pending' &&
-      !activeBet1.queued &&
       autoCashout1 &&
       parseFloat(gameState.multiplier) >= parseFloat(autoCashout1) &&
-      !isCashingOut1.current
+      !isCashingOut1.current  // prevent double fire
     ) {
       isCashingOut1.current = true;
       cashout(1)
@@ -80,7 +94,6 @@ export const GameProvider = ({ children }) => {
       gameState.status === 'RUNNING' &&
       activeBet2 &&
       activeBet2.status === 'pending' &&
-      !activeBet2.queued &&
       autoCashout2 &&
       parseFloat(gameState.multiplier) >= parseFloat(autoCashout2) &&
       !isCashingOut2.current
@@ -92,19 +105,19 @@ export const GameProvider = ({ children }) => {
     }
   }, [gameState.multiplier, gameState.status, activeBet2, autoCashout2, cashout]);
 
+  // Reset active bets when round ends
+  // But keep queued bets alive — they carry into the next round
   useEffect(() => {
     if (gameState.status === 'CRASHED' || gameState.status === 'STOPPED') {
-      // Only clear bets that are NOT queued for next round
-      setActiveBet1(prev => (prev && prev.queued ? prev : null));
-      setActiveBet2(prev => (prev && prev.queued ? prev : null));
+      setActiveBet1(prev => (prev?.queued ? prev : null));
+      setActiveBet2(prev => (prev?.queued ? prev : null));
       isCashingOut1.current = false;
       isCashingOut2.current = false;
     }
-
-    // When a new round starts (WAITING), queued bets are now active — remove queued flag
+    // When WAITING starts, strip the queued flag — bet is now live
     if (gameState.status === 'WAITING') {
-      setActiveBet1(prev => prev && prev.queued ? { ...prev, queued: false } : prev);
-      setActiveBet2(prev => prev && prev.queued ? { ...prev, queued: false } : prev);
+      setActiveBet1(prev => prev?.queued ? { ...prev, queued: false } : prev);
+      setActiveBet2(prev => prev?.queued ? { ...prev, queued: false } : prev);
     }
   }, [gameState.status]);
 
@@ -114,6 +127,7 @@ export const GameProvider = ({ children }) => {
       activeBet1, activeBet2,
       placeBet,
       cashout,
+      cancelBet,
       autoCashout1, setAutoCashout1,
       autoCashout2, setAutoCashout2
     }}>

@@ -10,7 +10,7 @@ class GameEngine {
     this.bets = [];
     this.queuedBets = []; // bets placed during a live round, for next round
     this.history = [];
-    this.waitTime = 5;
+    this.waitTime = 9;
     this.timer = 0;
     this.adminStopped = false;
     this.start();
@@ -153,6 +153,30 @@ class GameEngine {
     this.bets.push(bet);
     this.broadcastState();
     return bet;
+  }
+
+  async cancelBet(userId, slotId = 1) {
+    // Can only cancel during WAITING phase or if queued
+    const betInQueue = this.queuedBets.find(b => b.userId === userId && b.slotId === slotId);
+    const betInWaiting = this.status === 'WAITING'
+      ? this.bets.find(b => b.userId === userId && b.slotId === slotId && b.status === 'pending')
+      : null;
+
+    const bet = betInQueue || betInWaiting;
+    if (!bet) throw new Error('No cancellable bet found');
+
+    // Refund the amount
+    await updateUserBalance(userId, bet.amount, 'credit', `Cancelled bet in slot ${slotId}`);
+
+    // Remove from the appropriate array
+    if (betInQueue) {
+      this.queuedBets = this.queuedBets.filter(b => !(b.userId === userId && b.slotId === slotId));
+    } else {
+      this.bets = this.bets.filter(b => !(b.userId === userId && b.slotId === slotId));
+    }
+
+    this.broadcastState();
+    return { refunded: bet.amount };
   }
 
   async cashout(userId, slotId = 1) {
