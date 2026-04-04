@@ -21,9 +21,10 @@ const BetPanel = ({ slot = 1 }) => {
   const autoCashout = slot === 1 ? autoCashout1 : autoCashout2;
   const setAutoCashout = slot === 1 ? setAutoCashout1 : setAutoCashout2;
 
-  const canPlaceBet = (gameState.status === 'WAITING' || gameState.status === 'RUNNING') && !activeBet;
-  const isPending = activeBet && activeBet.status === 'pending';
+  const isQueued = activeBet && activeBet.queued;
+  const isPending = activeBet && activeBet.status === 'pending' && !activeBet.queued;
   const canCashout = gameState.status === 'RUNNING' && isPending;
+  const canPlaceBet = (gameState.status === 'WAITING' || gameState.status === 'RUNNING') && !activeBet;
 
   const handlePlaceBet = async () => {
     setLoading(true);
@@ -168,6 +169,11 @@ const BetPanel = ({ slot = 1 }) => {
             {canCashout ? `$${(amount * gameState.multiplier).toFixed(2)}` : '...'}
           </span>
         </button>
+      ) : isQueued ? (
+        <div className="w-full h-14 rounded-xl flex flex-col items-center justify-center gap-0.5 bg-yellow-600/10 border border-yellow-700/30">
+          <span className="text-[9px] font-black uppercase tracking-[0.25em] text-yellow-500">Queued for Next Round</span>
+          <span className="text-xl font-black text-yellow-400">${activeBet.amount.toFixed(2)}</span>
+        </div>
       ) : (
         <button
           onClick={handlePlaceBet}
