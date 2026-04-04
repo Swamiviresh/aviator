@@ -22,7 +22,6 @@ export const GameProvider = ({ children }) => {
   const [autoCashout1, setAutoCashout1] = useState(null);
   const [autoCashout2, setAutoCashout2] = useState(null);
 
-  // Refs to prevent double-firing auto cashout
   const isCashingOut1 = useRef(false);
   const isCashingOut2 = useRef(false);
 
@@ -63,9 +62,10 @@ export const GameProvider = ({ children }) => {
       gameState.status === 'RUNNING' &&
       activeBet1 &&
       activeBet1.status === 'pending' &&
+      !activeBet1.queued &&
       autoCashout1 &&
       parseFloat(gameState.multiplier) >= parseFloat(autoCashout1) &&
-      !isCashingOut1.current  // prevent double fire
+      !isCashingOut1.current
     ) {
       isCashingOut1.current = true;
       cashout(1)
@@ -80,6 +80,7 @@ export const GameProvider = ({ children }) => {
       gameState.status === 'RUNNING' &&
       activeBet2 &&
       activeBet2.status === 'pending' &&
+      !activeBet2.queued &&
       autoCashout2 &&
       parseFloat(gameState.multiplier) >= parseFloat(autoCashout2) &&
       !isCashingOut2.current
@@ -91,13 +92,19 @@ export const GameProvider = ({ children }) => {
     }
   }, [gameState.multiplier, gameState.status, activeBet2, autoCashout2, cashout]);
 
-  // Reset active bets and cashout guards when round ends
   useEffect(() => {
     if (gameState.status === 'CRASHED' || gameState.status === 'STOPPED') {
-      setActiveBet1(null);
-      setActiveBet2(null);
+      // Only clear bets that are NOT queued for next round
+      setActiveBet1(prev => (prev && prev.queued ? prev : null));
+      setActiveBet2(prev => (prev && prev.queued ? prev : null));
       isCashingOut1.current = false;
       isCashingOut2.current = false;
+    }
+
+    // When a new round starts (WAITING), queued bets are now active — remove queued flag
+    if (gameState.status === 'WAITING') {
+      setActiveBet1(prev => prev && prev.queued ? { ...prev, queued: false } : prev);
+      setActiveBet2(prev => prev && prev.queued ? { ...prev, queued: false } : prev);
     }
   }, [gameState.status]);
 
