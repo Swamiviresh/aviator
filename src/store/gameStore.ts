@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export type GameStatus = 'WAITING' | 'RUNNING' | 'CRASHED' | 'STOPPED';
 
-interface Bet {
+export interface Bet {
   userId: number;
   username: string;
   amount: number;

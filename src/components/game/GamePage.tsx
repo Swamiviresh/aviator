@@ -43,7 +43,6 @@ const MultiplierCanvas = memo(function MultiplierCanvas({ status, multiplier }: 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const pointsRef = useRef<{ x: number; y: number }[]>([]);
-  const frameCountRef = useRef(0);
   const lastTimeRef = useRef(0);
   const sizeRef = useRef({ width: 0, height: 0, dpr: 1 });
 
@@ -184,7 +183,6 @@ const MultiplierCanvas = memo(function MultiplierCanvas({ status, multiplier }: 
         if (time - lastTimeRef.current >= 1000 / CANVAS_FPS) {
           draw();
           lastTimeRef.current = time;
-          frameCountRef.current++;
         }
         rafId = requestAnimationFrame(animate);
       };
@@ -430,7 +428,7 @@ function LiveBetsPanel({ bets, status, multiplier }: { bets: Bet[]; status: Game
   );
 }
 
-// ── Memoized Live Bets Panel ───────────────────────────────────
+// ── Memoized Components ──────────────────────────────────────
 const LiveBetsPanelMemo = memo(LiveBetsPanel);
 
 // ── Main Game Page ─────────────────────────────────────────────
@@ -439,14 +437,12 @@ export default function GamePage() {
   const game = useGameStore();
   const { socket, isConnected } = useSocket({ port: GAME_SERVER_PORT });
 
-  // ── Socket Event Handlers ─────────────────────────────────────
+  // ── Socket Event Handlers ───────────────────────────────────
   useEffect(() => {
     if (!socket || !user) return;
 
-    // Authenticate on connect
     socket.emit('authenticate', { userId: user.id, token });
 
-    // Game update handler
     const handleGameUpdate = (data: Record<string, unknown>) => {
       useGameStore.getState().setGameState({
         status: data.status as GameStatus,
@@ -607,7 +603,7 @@ export default function GamePage() {
                 </div>
               </motion.div>
 
-              {/* Enhanced Plane Animation - uses AnimatedPlane component */}
+              {/* Enhanced Plane Animation */}
               <AnimatedPlane status={game.status} multiplier={game.multiplier} />
             </div>
 
